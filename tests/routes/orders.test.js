@@ -97,6 +97,18 @@ describe('POST /api/orders - input validation', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(createOrder).not.toHaveBeenCalled();
     });
+
+    it('rejects an item with an empty string productId', async () => {
+      const { req, res, next } = mockReqRes({
+        ...validPayload(),
+        items: [{ productId: '', quantity: 1 }],
+      });
+
+      await postHandler(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(createOrder).not.toHaveBeenCalled();
+    });
   });
 
   // ── quantity ─────────────────────────────────────────────────────────────
@@ -216,6 +228,21 @@ describe('POST /api/orders - input validation', () => {
       const [{ details }] = res.json.mock.calls[0];
       expect(details.length).toBeGreaterThan(0);
       expect(details.every((d) => typeof d === 'string')).toBe(true);
+      expect(createOrder).not.toHaveBeenCalled();
+    });
+
+    it('accumulates multiple simultaneous violations into a single response', async () => {
+      const { req, res, next } = mockReqRes({ shippingState: 'California' });
+
+      await postHandler(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Validation failed',
+        details: expect.any(Array),
+      });
+
+      expect(res.json.mock.calls[0][0].details.length).toBeGreaterThan(1);
       expect(createOrder).not.toHaveBeenCalled();
     });
   });
