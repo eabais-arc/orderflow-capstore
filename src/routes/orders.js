@@ -7,6 +7,36 @@ const { getActiveUsers } = require("../services/userService");
 const logger = require("../utils/logger");
 
 /**
+ * Validate the body of a POST /api/orders request.
+ *
+ * Accumulates every violation (rather than failing fast) so callers get a
+ * complete list of problems in one response.
+ */
+function validateOrderPayload(body) {
+  const errors = [];
+  const { items, shippingState } = body || {};
+
+  if (!Array.isArray(items) || items.length === 0) {
+    errors.push("items must be a non-empty array");
+  } else {
+    items.forEach((item, i) => {
+      if (!item || typeof item.productId !== "string" || item.productId.trim() === "") {
+        errors.push(`items[${i}].productId is required`);
+      }
+      if (!Number.isInteger(item && item.quantity) || item.quantity <= 0) {
+        errors.push(`items[${i}].quantity must be a positive integer`);
+      }
+    });
+  }
+
+  if (shippingState !== undefined && (typeof shippingState !== "string" || !/^[A-Za-z]{2}$/.test(shippingState))) {
+    errors.push("shippingState must be a two-letter state code");
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
  * GET /api/orders
  * List orders for the authenticated user (customers see their own,
  * admins/managers see all).
@@ -88,8 +118,9 @@ router.post("/", authenticate("orders:write"), async (req, res, next) => {
   try {
     const { items, shippingState } = req.body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "Order must contain at least one item" });
+    const { valid, errors } = validateOrderPayload(req.body);
+    if (!valid) {
+      return res.status(400).json({ error: "Validation failed", details: errors });
     }
 
     const order = await createOrder(
