@@ -130,3 +130,11 @@ The final workflow produced the following evidence:
 * The test additions were limited to the reported coverage gaps.
 
 The review process therefore provided concrete evidence that both the implementation and its tests were independently challenged rather than simply accepting the first successful test run.
+
+## Git Workflow Note
+
+The feature implementation and review workflow was completed before the feature branch was created. The implementation commits were initially made on the existing branch.
+
+After the implementation and review work was complete, a dedicated feature branch was created from the resulting commit and will be used for the final PR.
+
+I did not rewrite or force-push the existing commit history solely to make the branch creation appear earlier than it actually occurred. The workflow evidence is therefore based on the actual session and commit history rather than reconstructed history.
